@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#151a2d" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>HeroFit MVP</title>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>HeroFit</h1>
+        <p>Treine no mundo real. Evolua o seu herói.</p>
+      </div>
+      <div class="level">Nv. <span id="level">1</span></div>
+    </header>
+
+    <section class="card hero-card">
+      <div class="hero" id="hero">🦸</div>
+      <div class="grow">
+        <strong id="heroName">Herói Iniciante</strong>
+        <div class="bar"><div id="xpBar"></div></div>
+        <small><span id="xp">0</span> XP · sequência: <span id="streak">0</span> semana(s)</small>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="card"><b id="strength">1</b><span>Força</span></div>
+      <div class="card"><b id="technique">1</b><span>Técnica</span></div>
+      <div class="card"><b id="balance">1</b><span>Equilíbrio</span></div>
+      <div class="card"><b id="endurance">1</b><span>Resistência</span></div>
+    </section>
+
+    <section class="card">
+      <label for="sport">Modalidade</label>
+      <select id="sport">
+        <option value="squat">Agachamento — câmera</option>
+        <option value="jiujitsu">Jiu-jítsu — tempo</option>
+        <option value="karate">Karatê — tempo</option>
+        <option value="acroyoga">Acroyoga — tempo</option>
+        <option value="running">Corrida/cardio — tempo</option>
+      </select>
+
+      <div class="camera-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div id="cameraMessage">Toque em “Começar treino” e permita o uso da câmera.</div>
+      </div>
+
+      <div class="workout-numbers">
+        <div><b id="timer">00:00</b><span>Tempo</span></div>
+        <div><b id="reps">0</b><span>Repetições</span></div>
+        <div><b id="points">0</b><span>Pontos</span></div>
+      </div>
+
+      <div class="actions">
+        <button id="startBtn">Começar treino</button>
+        <button id="finishBtn" class="secondary" disabled>Finalizar</button>
+      </div>
+      <p id="status" class="status">Posicione o celular para mostrar o corpo inteiro.</p>
+    </section>
+
+    <section class="card">
+      <h2>Ensinar novo treino - base coletiva</h2>
+      <p class="notice">Grave somente movimentos seguros. Para jiu-jítsu ou acroyoga com duas pessoas, ambas devem autorizar a gravação.</p>
+      <div class="field"><label for="newTrainingName">Nome do movimento</label><input id="newTrainingName" placeholder="Ex.: chute frontal" maxlength="60"></div>
+      <div class="field"><label for="newTrainingSport">Modalidade</label><select id="newTrainingSport"><option>Jiu-jítsu</option><option>Karatê</option><option>Acroyoga</option><option>Musculação</option><option>Outro</option></select></div>
+      <div class="field"><label for="peopleCount">Pessoas na gravação</label><select id="peopleCount"><option value="1">1 pessoa</option><option value="2">2 pessoas</option></select></div>
+      <label class="check"><input type="checkbox" id="consentCheck"><span>Confirmo que todas as pessoas autorizaram o uso dos dados corporais para melhorar o reconhecimento coletivo. O protótipo salva pontos do corpo, não o vídeo.</span></label>
+      <div class="actions">
+        <button id="recordExampleBtn">Gravar exemplo (5 s)</button>
+        <button id="exportDatasetBtn" class="secondary">Exportar dados</button>
+      </div>
+      <p id="learningStatus" class="status">Grave pelo menos 10 exemplos corretos e 5 incorretos por movimento.</p>
+      <div class="field"><label for="exampleLabel">Tipo do exemplo</label><select id="exampleLabel"><option value="correct">Movimento correto</option><option value="incorrect">Movimento incorreto</option></select></div>
+      <div id="datasetList" class="dataset-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>Missão semanal</h2>
+      <p>Complete 3 treinos em dias diferentes.</p>
+      <div class="bar"><div id="weekBar"></div></div>
+      <small><span id="weekCount">0</span>/3 dias treinados nesta semana</small>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
