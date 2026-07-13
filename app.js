@@ -3,6 +3,7 @@ import { FilesetResolver, PoseLandmarker } from 'https://cdn.jsdelivr.net/npm/@m
 const $=id=>document.getElementById(id);
 const state=JSON.parse(localStorage.getItem('herofitState')||'{"xp":0,"strength":1,"technique":1,"balance":1,"endurance":1,"trainingDates":[]}');
 let stream=null, landmarker=null, running=false, startedAt=0, timerId=null, reps=0, points=0, phase='up', lastVideoTime=-1;
+let validPoseFrames=0, invalidPoseFrames=0, currentPoseValid=false;
 
 function save(){localStorage.setItem('herofitState',JSON.stringify(state));renderHero()}
 function weekKey(d=new Date()){const x=new Date(d);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return x.toISOString().slice(0,10)}
@@ -17,11 +18,33 @@ function renderHero(){
 }
 function angle(a,b,c){const ab=Math.atan2(a.y-b.y,a.x-b.x),cb=Math.atan2(c.y-b.y,c.x-b.x);let deg=Math.abs((ab-cb)*180/Math.PI);return deg>180?360-deg:deg}
 function draw(lms){const c=$('overlay'),ctx=c.getContext('2d');c.width=$('video').videoWidth;c.height=$('video').videoHeight;ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#42d392';for(const p of lms){if((p.visibility??1)>.55){ctx.beginPath();ctx.arc(p.x*c.width,p.y*c.height,4,0,Math.PI*2);ctx.fill()}}}
+function fullBodyVisible(lms){
+  const required=[11,12,23,24,25,26,27,28];
+  const confident=required.every(i=>(lms[i]?.visibility??0)>=0.65);
+  if(!confident) return false;
+  const top=Math.min(lms[11].y,lms[12].y), bottom=Math.max(lms[27].y,lms[28].y);
+  const bodyHeight=bottom-top;
+  const hipsInside=lms[23].x>0.03&&lms[23].x<0.97&&lms[24].x>0.03&&lms[24].x<0.97;
+  return bodyHeight>=0.42&&hipsInside;
+}
 function processPose(lms){
-  const left=angle(lms[23],lms[25],lms[27]), right=angle(lms[24],lms[26],lms[28]); const knee=(left+right)/2;
-  $('status').textContent=`Ângulo dos joelhos: ${Math.round(knee)}°`;
-  if(knee<105) phase='down';
-  if(phase==='down'&&knee>155){phase='up';reps++;points+=10;$('reps').textContent=reps;$('points').textContent=points;navigator.vibrate?.(80)}
+  currentPoseValid=fullBodyVisible(lms);
+  if(!currentPoseValid){
+    invalidPoseFrames++;
+    phase='up';
+    $('status').textContent='Corpo incompleto. Afaste o celular e mostre ombros, quadris, joelhos e pés.';
+    return;
+  }
+  validPoseFrames++;
+  const left=angle(lms[23],lms[25],lms[27]), right=angle(lms[24],lms[26],lms[28]);
+  const knee=(left+right)/2;
+  $('status').textContent=`Corpo validado · ângulo dos joelhos: ${Math.round(knee)}°`;
+  if(knee<100) phase='down';
+  if(phase==='down'&&knee>160){
+    phase='up'; reps++; points+=10;
+    $('reps').textContent=reps; $('points').textContent=points;
+    navigator.vibrate?.(80);
+  }
 }
 async function loop(){if(!running)return;const v=$('video');if(landmarker&&v.readyState>=2&&v.currentTime!==lastVideoTime){lastVideoTime=v.currentTime;const r=landmarker.detectForVideo(v,performance.now());if(r.landmarks?.[0]){draw(r.landmarks[0]);processPose(r.landmarks[0])}}requestAnimationFrame(loop)}
 async function initPose(){
@@ -33,11 +56,36 @@ async function initPose(){
 }
 function startClock(){timerId=setInterval(()=>{const s=Math.floor((Date.now()-startedAt)/1000);$('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');if($('sport').value!=='squat'){points=Math.floor(s/6);$('points').textContent=points}},500)}
 $('startBtn').onclick=async()=>{
-  try{running=true;startedAt=Date.now();reps=points=0;$('reps').textContent=0;$('points').textContent=0;$('startBtn').disabled=true;$('finishBtn').disabled=false;startClock();
+  try{running=true;startedAt=Date.now();reps=points=0;validPoseFrames=invalidPoseFrames=0;currentPoseValid=false;phase='up';$('reps').textContent=0;$('points').textContent=0;$('startBtn').disabled=true;$('finishBtn').disabled=false;startClock();
     if($('sport').value==='squat'){await initPose();stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:720},height:{ideal:1280}},audio:false});$('video').srcObject=stream;$('cameraMessage').style.display='none';requestAnimationFrame(loop)}else{$('cameraMessage').textContent='Treino por tempo ativo. A câmera não é necessária nesta versão.';$('cameraMessage').style.display='grid';$('status').textContent='Mantenha o treino ativo e finalize quando terminar.'}
   }catch(e){running=false;clearInterval(timerId);$('status').textContent='Não foi possível abrir a câmera. Use HTTPS e permita o acesso.';$('startBtn').disabled=false;$('finishBtn').disabled=true;console.error(e)}
 };
-$('finishBtn').onclick=()=>{running=false;clearInterval(timerId);stream?.getTracks().forEach(t=>t.stop());const sport=$('sport').value;const earned=points+20;state.xp+=earned;if(sport==='squat')state.strength+=Math.max(1,Math.floor(reps/10));if(sport==='jiujitsu'||sport==='karate')state.technique+=1;if(sport==='acroyoga')state.balance+=1;if(sport==='running')state.endurance+=1;const now=new Date(),date=now.toISOString().slice(0,10);if(!state.trainingDates.some(x=>x.date===date))state.trainingDates.push({date,week:weekKey(now)});save();$('status').textContent=`Treino concluído: +${earned} XP!`;$('startBtn').disabled=false;$('finishBtn').disabled=true};
+$('finishBtn').onclick=()=>{
+  running=false; clearInterval(timerId); stream?.getTracks().forEach(t=>t.stop());
+  const sport=$('sport').value;
+  let earned=0, approved=false, message='';
+  if(sport==='squat'){
+    const enoughBodyData=validPoseFrames>=20;
+    approved=enoughBodyData&&reps>0;
+    if(approved){
+      earned=points;
+      state.xp+=earned;
+      state.strength+=Math.max(1,Math.floor(reps/10));
+      message=`Treino validado: ${reps} agachamento(s), +${earned} XP.`;
+    }else{
+      message='Treino não validado: nenhum agachamento completo com o corpo inteiro visível. 0 XP.';
+    }
+  }else{
+    message='Treino registrado, mas 0 XP: esta modalidade ainda precisa de verificação online por um modelo aprovado.';
+  }
+  if(approved){
+    const now=new Date(),date=now.toISOString().slice(0,10);
+    if(!state.trainingDates.some(x=>x.date===date)) state.trainingDates.push({date,week:weekKey(now)});
+    save();
+  }else renderHero();
+  $('status').textContent=message;
+  $('startBtn').disabled=false; $('finishBtn').disabled=true;
+};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');renderHero();
 
 // --- Base coletiva: captura sequências anonimizadas de poses ---
