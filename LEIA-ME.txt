@@ -1,0 +1,14 @@
+HEROFIT — IA LOCAL DE VERIFICAÇÃO DE AGACHAMENTO
+
+Substitua no GitHub: app.js e sw.js.
+
+A versão nova:
+- remove o XP antigo das versões com erro;
+- exige corpo inteiro da cabeça aos pés;
+- analisa a sequência temporal, não uma foto;
+- exige em pé -> descida -> profundidade -> subida;
+- verifica joelhos, tronco, duração e profundidade;
+- só concede XP no final, se a IA aprovar o treino;
+- rosto sozinho ou movimento incompleto = 0 XP.
+
+Depois do commit, limpe os dados do site no Chrome ou abra em aba anônima.
