@@ -22,6 +22,7 @@ function processPose(lms){
   $('status').textContent=`Ângulo dos joelhos: ${Math.round(knee)}°`;
   if(knee<105) phase='down';
   if(phase==='down'&&knee>155){phase='up';reps++;points+=10;$('reps').textContent=reps;$('points').textContent=points;navigator.vibrate?.(80)}
+}
 async function loop(){if(!running)return;const v=$('video');if(landmarker&&v.readyState>=2&&v.currentTime!==lastVideoTime){lastVideoTime=v.currentTime;const r=landmarker.detectForVideo(v,performance.now());if(r.landmarks?.[0]){draw(r.landmarks[0]);processPose(r.landmarks[0])}}requestAnimationFrame(loop)}
 async function initPose(){
   if(landmarker)return;
